@@ -10,6 +10,10 @@ add_library(VPKParser
         src/vpk.hpp
         src/structs/headers.hpp
         src/structs/directory-entry.hpp
+        src/helpers/check-bounds.hpp
+        src/helpers/offset-data-view.hpp
+        src/helpers/offset-data-view.cpp
+        src/errors.hpp
 )
 
 target_include_directories(
