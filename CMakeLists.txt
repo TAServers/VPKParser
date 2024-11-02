@@ -8,6 +8,8 @@ add_library(VPKParser
         VPKParser.hpp
         src/vpk.cpp
         src/vpk.hpp
+        src/structs/headers.hpp
+        src/structs/directory-entry.hpp
 )
 
 target_include_directories(
