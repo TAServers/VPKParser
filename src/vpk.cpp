@@ -9,7 +9,7 @@ namespace VpkParser {
 
   namespace {
     constexpr uint32_t FILE_SIGNATURE = 0x55aa1234;
-    constexpr std::set<uint32_t> SUPPORTED_VERSIONS = {1, 2};
+    const std::set<uint32_t> SUPPORTED_VERSIONS = {1, 2};
   }
 
   Vpk::Vpk(const std::span<std::byte>& data) {
@@ -25,17 +25,26 @@ namespace VpkParser {
     }
 
     size_t offset = header.version == 1 ? sizeof(HeaderV1) : sizeof(HeaderV2);
-    std::string extension;
-    std::string directory;
-    std::string filename;
-    while (!(extension = dataView.parseString(offset, "Failed to parse extension")).empty()) {
+    while (true) {
+      const auto extension = dataView.parseString(offset, "Failed to parse extension");
       offset += extension.length() + 1;
+      if (extension.empty()) {
+        break;
+      }
 
-      while (!(directory = dataView.parseString(offset, "Failed to parse directory")).empty()) {
+      while (true) {
+        const auto directory = dataView.parseString(offset, "Failed to parse directory");
         offset += directory.length() + 1;
+        if (directory.empty()) {
+          break;
+        }
 
-        while (!(filename = dataView.parseString(offset, "Failed to parse filename")).empty()) {
+        while (true) {
+          const auto filename = dataView.parseString(offset, "Failed to parse filename");
           offset += filename.length() + 1;
+          if (filename.empty()) {
+            break;
+          }
 
           const auto directoryInfo =
             dataView.parseStruct<DirectoryEntry>(offset, "Failed to parse directory entry").first;
@@ -55,6 +64,8 @@ namespace VpkParser {
               ),
             }
           );
+
+          offset += directoryInfo.preloadDataSize;
         }
       }
     }

@@ -3,6 +3,7 @@
 #include <cstdint>
 
 namespace VpkParser::Structs {
+#pragma pack(push, 1)
   struct DirectoryEntry {
     /**
      * CRC of the file this references.
@@ -34,4 +35,5 @@ namespace VpkParser::Structs {
 
     uint16_t terminator = 0xffff;
   };
+#pragma pack(pop)
 }

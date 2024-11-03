@@ -3,6 +3,7 @@
 #include <cstdint>
 
 namespace VpkParser::Structs {
+#pragma pack(push, 1)
   struct HeaderV1 {
     uint32_t signature = 0x55aa1234;
     uint32_t version = 1;
@@ -45,4 +46,5 @@ namespace VpkParser::Structs {
      */
     uint32_t signatureSectionSize = 0;
   };
+#pragma pack(pop)
 }
