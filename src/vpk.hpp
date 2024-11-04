@@ -8,13 +8,15 @@
 namespace VpkParser {
   class Vpk {
   public:
+    Vpk() = default;
+
     explicit Vpk(const std::span<std::byte>& data);
 
     const std::vector<std::byte>& getPreloadData(const std::filesystem::path& path) const;
 
     std::vector<std::byte> readFile(
       const std::filesystem::path& path,
-      const std::function<std::span<std::byte>(uint16_t archive, uint32_t offset, uint32_t size)>& readFromArchive
+      const std::function<std::vector<std::byte>(uint16_t archive, uint32_t offset, uint32_t size)>& readFromArchive
     ) const;
 
     bool fileExists(const std::filesystem::path& path) const;

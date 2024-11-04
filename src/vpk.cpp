@@ -77,7 +77,7 @@ namespace VpkParser {
 
   std::vector<std::byte> Vpk::readFile(
     const std::filesystem::path& path,
-    const std::function<std::span<std::byte>(uint16_t archive, uint32_t offset, uint32_t size)>& readFromArchive
+    const std::function<std::vector<std::byte>(uint16_t archive, uint32_t offset, uint32_t size)>& readFromArchive
   ) const {
     const auto& fileInfo = files.at(path);
     const auto& archiveData = readFromArchive(fileInfo.archiveIndex, fileInfo.offset, fileInfo.size);
