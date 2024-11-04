@@ -32,6 +32,11 @@ namespace VpkParser {
       std::vector<std::byte> preloadData;
     };
 
-    std::unordered_map<std::filesystem::path, File> files;
+    /**
+     * By extension, then directory, then filename.
+     */
+    std::unordered_map<std::string, std::unordered_map<std::string, std::unordered_map<std::string, File>>> files;
+
+    [[nodiscard]] const File& getFileMetadata(const std::filesystem::path& path) const;
   };
 }

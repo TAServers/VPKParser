@@ -26,11 +26,14 @@ namespace VpkParser {
 
     size_t offset = header.version == 1 ? sizeof(HeaderV1) : sizeof(HeaderV2);
     while (true) {
-      const auto extension = dataView.parseString(offset, "Failed to parse extension");
+      auto extension = dataView.parseString(offset, "Failed to parse extension");
       offset += extension.length() + 1;
       if (extension.empty()) {
         break;
       }
+      extension = "." + extension;
+
+      files.emplace(extension, std::unordered_map<std::string, std::unordered_map<std::string, File>>());
 
       while (true) {
         const auto directory = dataView.parseString(offset, "Failed to parse directory");
@@ -38,6 +41,8 @@ namespace VpkParser {
         if (directory.empty()) {
           break;
         }
+
+        files.at(extension).emplace(directory, std::unordered_map<std::string, File>());
 
         while (true) {
           const auto filename = dataView.parseString(offset, "Failed to parse filename");
@@ -50,11 +55,8 @@ namespace VpkParser {
             dataView.parseStruct<DirectoryEntry>(offset, "Failed to parse directory entry").first;
           offset += sizeof(DirectoryEntry);
 
-          auto path = std::filesystem::path(directory) / filename;
-          path.replace_extension(extension);
-
-          files.emplace(
-            path,
+          files.at(extension).at(directory).emplace(
+            filename,
             File{
               .archiveIndex = directoryInfo.archiveIndex,
               .offset = directoryInfo.entryOffset,
@@ -72,14 +74,14 @@ namespace VpkParser {
   }
 
   const std::vector<std::byte>& Vpk::getPreloadData(const std::filesystem::path& path) const {
-    return files.at(path).preloadData;
+    return getFileMetadata(path).preloadData;
   }
 
   std::vector<std::byte> Vpk::readFile(
     const std::filesystem::path& path,
     const std::function<std::vector<std::byte>(uint16_t archive, uint32_t offset, uint32_t size)>& readFromArchive
   ) const {
-    const auto& fileInfo = files.at(path);
+    const auto& fileInfo = getFileMetadata(path);
     const auto& archiveData = readFromArchive(fileInfo.archiveIndex, fileInfo.offset, fileInfo.size);
 
     std::vector<std::byte> fileData;
@@ -92,6 +94,12 @@ namespace VpkParser {
   }
 
   bool Vpk::fileExists(const std::filesystem::path& path) const {
-    return files.contains(path);
+    return files.contains(path.extension()) && //
+      files.at(path.extension()).contains(path.parent_path()) && //
+      files.at(path.extension()).at(path.parent_path()).contains(path.stem());
+  }
+
+  const Vpk::File& Vpk::getFileMetadata(const std::filesystem::path& path) const {
+    return files.at(path.extension()).at(path.parent_path()).at(path.stem());
   }
 }
