@@ -1,5 +1,7 @@
 #include "vpk.hpp"
+#include "helpers/case-insensitive-map.hpp"
 #include "helpers/offset-data-view.hpp"
+#include "structs/directory-entry.hpp"
 #include "structs/headers.hpp"
 #include <set>
 
@@ -33,7 +35,7 @@ namespace VpkParser {
       }
       extension = "." + extension;
 
-      files.emplace(extension, std::unordered_map<std::string, std::unordered_map<std::string, File>>());
+      files.emplace(extension, CaseInsensitiveMap<CaseInsensitiveMap<File>>());
 
       while (true) {
         const auto directory = dataView.parseString(offset, "Failed to parse directory");
@@ -42,7 +44,7 @@ namespace VpkParser {
           break;
         }
 
-        files.at(extension).emplace(directory, std::unordered_map<std::string, File>());
+        files.at(extension).emplace(directory, CaseInsensitiveMap<File>());
 
         while (true) {
           const auto filename = dataView.parseString(offset, "Failed to parse filename");

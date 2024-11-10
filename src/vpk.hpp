@@ -1,6 +1,6 @@
 #pragma once
 
-#include "structs/directory-entry.hpp"
+#include "helpers/case-insensitive-map.hpp"
 #include <filesystem>
 #include <functional>
 #include <span>
@@ -12,14 +12,14 @@ namespace VpkParser {
 
     explicit Vpk(const std::span<std::byte>& data);
 
-    const std::vector<std::byte>& getPreloadData(const std::filesystem::path& path) const;
+    [[nodiscard]] const std::vector<std::byte>& getPreloadData(const std::filesystem::path& path) const;
 
     std::vector<std::byte> readFile(
       const std::filesystem::path& path,
       const std::function<std::vector<std::byte>(uint16_t archive, uint32_t offset, uint32_t size)>& readFromArchive
     ) const;
 
-    bool fileExists(const std::filesystem::path& path) const;
+    [[nodiscard]] bool fileExists(const std::filesystem::path& path) const;
 
   private:
     struct File {
@@ -35,7 +35,7 @@ namespace VpkParser {
     /**
      * By extension, then directory, then filename.
      */
-    std::unordered_map<std::string, std::unordered_map<std::string, std::unordered_map<std::string, File>>> files;
+    CaseInsensitiveMap<CaseInsensitiveMap<CaseInsensitiveMap<File>>> files;
 
     [[nodiscard]] const File& getFileMetadata(const std::filesystem::path& path) const;
   };

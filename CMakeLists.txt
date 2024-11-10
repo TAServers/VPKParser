@@ -14,6 +14,8 @@ add_library(VPKParser
         src/helpers/offset-data-view.hpp
         src/helpers/offset-data-view.cpp
         src/errors.hpp
+        src/helpers/case-insensitive-map.hpp
+        src/helpers/case-insensitive-map.cpp
 )
 
 target_include_directories(
