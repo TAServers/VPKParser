@@ -96,12 +96,14 @@ namespace VpkParser {
   }
 
   bool Vpk::fileExists(const std::filesystem::path& path) const {
-    return files.contains(path.extension().string()) && //
-      files.at(path.extension().string()).contains(path.parent_path().string()) && //
-      files.at(path.extension().string()).at(path.parent_path().string()).contains(path.stem().string());
+    return files.contains(path.extension().generic_string()) && //
+      files.at(path.extension().generic_string()).contains(path.parent_path().generic_string()) && //
+      files.at(path.extension().generic_string())
+        .at(path.parent_path().generic_string())
+        .contains(path.stem().generic_string());
   }
 
   const Vpk::File& Vpk::getFileMetadata(const std::filesystem::path& path) const {
-    return files.at(path.extension().string()).at(path.parent_path().string()).at(path.stem().string());
+    return files.at(path.extension().generic_string()).at(path.parent_path().generic_string()).at(path.stem().generic_string());
   }
 }
