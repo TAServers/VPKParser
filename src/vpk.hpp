@@ -19,6 +19,10 @@ namespace VpkParser {
       const std::function<std::vector<std::byte>(uint16_t archive, uint32_t offset, uint32_t size)>& readFromArchive
     ) const;
 
+    [[nodiscard]] std::optional<std::pair<std::vector<std::filesystem::path>, std::vector<std::filesystem::path>>> list(
+      const std::filesystem::path& path
+    ) const;
+
     [[nodiscard]] bool fileExists(const std::filesystem::path& path) const;
 
   private:

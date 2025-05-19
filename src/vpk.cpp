@@ -12,6 +12,29 @@ namespace VpkParser {
   namespace {
     constexpr uint32_t FILE_SIGNATURE = 0x55aa1234;
     const std::set<uint32_t> SUPPORTED_VERSIONS = {1, 2};
+
+    bool isBaseRoot(const std::filesystem::path& path) {
+      return path == "" || path == "/" || path == "\\";
+    }
+
+    std::filesystem::path normalizeEnding(std::filesystem::path&& path) {
+      if (path.empty()) {
+        return path;
+      }
+
+      path += std::filesystem::path::preferred_separator;
+      path = path.make_preferred().lexically_normal();
+      return path;
+    }
+
+    bool isPathSubfolderOfBase(const std::filesystem::path& path, const std::filesystem::path& base) {
+      if (isBaseRoot(base)) {
+        return path.parent_path() == "";
+      }
+
+      const auto normalizedParentPath = normalizeEnding(path.parent_path());
+      return normalizedParentPath == base;
+    }
   }
 
   Vpk::Vpk(const std::span<std::byte>& data) {
@@ -95,6 +118,34 @@ namespace VpkParser {
     return std::move(fileData);
   }
 
+  std::optional<std::pair<std::vector<std::filesystem::path>, std::vector<std::filesystem::path>>> Vpk::list(
+    const std::filesystem::path& path
+  ) const {
+    std::vector<std::filesystem::path> fileList = {};
+    std::vector<std::filesystem::path> directoryList = {};
+
+    for (const auto& [extension, directories] : files) {
+      for (const auto& [dir, fileNames] : directories) {
+        auto dirPath = normalizeEnding(dir);
+
+        if (isPathSubfolderOfBase(dirPath, path)) {
+          directoryList.push_back(dirPath.filename());
+        } else if (dirPath == path) {
+          for (const auto& [fileName, _] : fileNames) {
+            fileList.push_back(fileName + extension);
+          }
+        }
+      }
+    }
+
+    if (fileList.empty() && directoryList.empty()) {
+      return std::nullopt;
+    }
+
+    std::erase_if(directoryList, [](const auto& dir) { return dir == ""; });
+    return std::make_pair(std::move(fileList), std::move(directoryList));
+  }
+
   bool Vpk::fileExists(const std::filesystem::path& path) const {
     return files.contains(path.extension().generic_string()) && //
       files.at(path.extension().generic_string()).contains(path.parent_path().generic_string()) && //
@@ -104,6 +155,8 @@ namespace VpkParser {
   }
 
   const Vpk::File& Vpk::getFileMetadata(const std::filesystem::path& path) const {
-    return files.at(path.extension().generic_string()).at(path.parent_path().generic_string()).at(path.stem().generic_string());
+    return files.at(path.extension().generic_string())
+      .at(path.parent_path().generic_string())
+      .at(path.stem().generic_string());
   }
 }
