@@ -3,6 +3,7 @@
 #include "helpers/offset-data-view.hpp"
 #include "structs/directory-entry.hpp"
 #include "structs/headers.hpp"
+#include <ranges>
 #include <set>
 
 namespace VpkParser {
@@ -13,11 +14,11 @@ namespace VpkParser {
     constexpr uint32_t FILE_SIGNATURE = 0x55aa1234;
     const std::set<uint32_t> SUPPORTED_VERSIONS = {1, 2};
 
-    bool isBaseRoot(const std::filesystem::path& path) {
+    bool isPathRoot(const std::filesystem::path& path) {
       return path == "" || path == "/" || path == "\\";
     }
 
-    std::filesystem::path genericize(std::filesystem::path&& path) {
+    std::filesystem::path normalizePath(std::filesystem::path&& path) {
       if (path.empty()) {
         return path;
       }
@@ -32,12 +33,11 @@ namespace VpkParser {
     }
 
     bool isPathSubfolderOfBase(const std::filesystem::path& path, const std::filesystem::path& base) {
-      if (isBaseRoot(base)) {
+      if (isPathRoot(base)) {
         return path.parent_path() == "";
       }
 
-      const auto normalizedParentPath = genericize(path.parent_path());
-      return normalizedParentPath == base;
+      return normalizePath(path.parent_path()) == base;
     }
   }
 
@@ -130,13 +130,13 @@ namespace VpkParser {
 
     for (const auto& [extension, directories] : files) {
       for (const auto& [dir, fileNames] : directories) {
-        auto dirPath = genericize(std::filesystem::path(dir));
+        auto dirPath = normalizePath(std::filesystem::path(dir));
 
         if (isPathSubfolderOfBase(dirPath, path)) {
           directoryList.push_back(dirPath.filename());
         } else if (dirPath == path) {
-          for (const auto& [fileName, _] : fileNames) {
-            fileList.push_back(fileName + extension);
+          for (const auto& fileName : fileNames | std::views::keys) {
+            fileList.emplace_back(fileName + extension);
           }
         }
       }
