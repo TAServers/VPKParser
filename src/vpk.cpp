@@ -17,14 +17,18 @@ namespace VpkParser {
       return path == "" || path == "/" || path == "\\";
     }
 
-    std::filesystem::path normalizeEnding(std::filesystem::path&& path) {
+    std::filesystem::path genericize(std::filesystem::path&& path) {
       if (path.empty()) {
         return path;
       }
 
-      path += std::filesystem::path::preferred_separator;
       path = path.make_preferred().lexically_normal();
-      return path;
+      auto stringPath = path.generic_string();
+      if (stringPath.back() == '/') {
+        stringPath.pop_back();
+      }
+
+      return {stringPath};
     }
 
     bool isPathSubfolderOfBase(const std::filesystem::path& path, const std::filesystem::path& base) {
@@ -32,7 +36,7 @@ namespace VpkParser {
         return path.parent_path() == "";
       }
 
-      const auto normalizedParentPath = normalizeEnding(path.parent_path());
+      const auto normalizedParentPath = genericize(path.parent_path());
       return normalizedParentPath == base;
     }
   }
@@ -126,7 +130,7 @@ namespace VpkParser {
 
     for (const auto& [extension, directories] : files) {
       for (const auto& [dir, fileNames] : directories) {
-        auto dirPath = normalizeEnding(dir);
+        auto dirPath = genericize(std::filesystem::path(dir));
 
         if (isPathSubfolderOfBase(dirPath, path)) {
           directoryList.push_back(dirPath.filename());
