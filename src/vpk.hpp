@@ -32,11 +32,19 @@ namespace VpkParser {
       std::vector<std::byte> preloadData;
     };
 
+    struct PathComponents {
+      std::string extension;
+      std::string directory;
+      std::string filename;
+    };
+
     /**
      * By extension, then directory, then filename.
      */
     CaseInsensitiveMap<CaseInsensitiveMap<CaseInsensitiveMap<File>>> files;
 
     [[nodiscard]] const File& getFileMetadata(const std::filesystem::path& path) const;
+
+    [[nodiscard]] static PathComponents splitPath(const std::filesystem::path& path);
   };
 }

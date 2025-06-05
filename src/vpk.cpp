@@ -96,14 +96,33 @@ namespace VpkParser {
   }
 
   bool Vpk::fileExists(const std::filesystem::path& path) const {
-    return files.contains(path.extension().generic_string()) && //
-      files.at(path.extension().generic_string()).contains(path.parent_path().generic_string()) && //
-      files.at(path.extension().generic_string())
-        .at(path.parent_path().generic_string())
-        .contains(path.stem().generic_string());
+    const auto components = splitPath(path);
+
+    return files.contains(components.extension) //
+      && files.at(components.extension).contains(components.directory) //
+      && files.at(components.extension).at(components.directory).contains(components.filename);
   }
 
   const Vpk::File& Vpk::getFileMetadata(const std::filesystem::path& path) const {
-    return files.at(path.extension().generic_string()).at(path.parent_path().generic_string()).at(path.stem().generic_string());
+    const auto components = splitPath(path);
+
+    return files.at(components.extension).at(components.directory).at(components.filename);
+  }
+
+  Vpk::PathComponents Vpk::splitPath(const std::filesystem::path& path) {
+    auto directory = path.parent_path().generic_string();
+    if (directory.starts_with('/')) {
+      if (directory.length() > 1) {
+        directory.erase(0, 1);
+      } else {
+        directory = "";
+      }
+    }
+
+    return {
+      .extension = path.extension().generic_string(),
+      .directory = directory,
+      .filename = path.stem().generic_string(),
+    };
   }
 }
