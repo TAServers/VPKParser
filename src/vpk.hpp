@@ -3,9 +3,22 @@
 #include "helpers/case-insensitive-map.hpp"
 #include <filesystem>
 #include <functional>
+#include <optional>
 #include <span>
 
 namespace VpkParser {
+  struct DirectoryContents {
+    /**
+     * Subdirectories of the listed directory.
+     */
+    std::vector<std::filesystem::path> directories;
+
+    /**
+     * Files in the listed directory.
+     */
+    std::vector<std::filesystem::path> files;
+  };
+
   class Vpk {
   public:
     Vpk() = default;
@@ -19,9 +32,12 @@ namespace VpkParser {
       const std::function<std::vector<std::byte>(uint16_t archive, uint32_t offset, uint32_t size)>& readFromArchive
     ) const;
 
-    [[nodiscard]] std::optional<std::pair<std::vector<std::filesystem::path>, std::vector<std::filesystem::path>>> list(
-      const std::filesystem::path& path
-    ) const;
+    /**
+     * Lists the subdirectories and files of the given directory.
+     * @param path Path to list.
+     * @return Subdirectories and files, or std::nullopt if path does not exist.
+     */
+    [[nodiscard]] std::optional<DirectoryContents> list(const std::filesystem::path& path) const;
 
     [[nodiscard]] bool fileExists(const std::filesystem::path& path) const;
 

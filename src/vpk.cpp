@@ -122,9 +122,7 @@ namespace VpkParser {
     return std::move(fileData);
   }
 
-  std::optional<std::pair<std::vector<std::filesystem::path>, std::vector<std::filesystem::path>>> Vpk::list(
-    const std::filesystem::path& path
-  ) const {
+  std::optional<DirectoryContents> Vpk::list(const std::filesystem::path& path) const {
     std::vector<std::filesystem::path> fileList = {};
     std::vector<std::filesystem::path> directoryList = {};
 
@@ -147,7 +145,10 @@ namespace VpkParser {
     }
 
     std::erase_if(directoryList, [](const auto& dir) { return dir == ""; });
-    return std::make_pair(std::move(fileList), std::move(directoryList));
+    return DirectoryContents{
+      .directories = std::move(directoryList),
+      .files = std::move(fileList),
+    };
   }
 
   bool Vpk::fileExists(const std::filesystem::path& path) const {
