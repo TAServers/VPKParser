@@ -162,11 +162,15 @@ namespace VpkParser {
   std::optional<std::string> Vpk::getSubdirectory(
     const std::string& parentDirectory, const std::string& childDirectory
   ) {
-    if (!childDirectory.starts_with(parentDirectory)) {
+    // Minus 1 for expected '/' between the matched child directory and next folder
+    // Minus another 1 for the expected folder name after the '/'
+    if (childDirectory.length() - 2 < parentDirectory.length() //
+        || !childDirectory.starts_with(parentDirectory) //
+        || childDirectory[parentDirectory.length()] != '/') {
       return std::nullopt;
     }
 
-    const auto startIndex = parentDirectory.length();
+    const auto startIndex = parentDirectory.length() + 1;
     const auto endIndex = childDirectory.find_first_of('/', startIndex);
 
     if (endIndex == std::string::npos) {
