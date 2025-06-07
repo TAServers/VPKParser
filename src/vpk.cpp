@@ -39,10 +39,17 @@ namespace VpkParser {
       files.emplace(extension, CaseInsensitiveMap<CaseInsensitiveMap<File>>());
 
       while (true) {
-        const auto directory = dataView.parseString(offset, "Failed to parse directory");
+        auto directory = dataView.parseString(offset, "Failed to parse directory");
         offset += directory.length() + 1;
         if (directory.empty()) {
           break;
+        }
+
+        // ASSUMPTION: Top-level files are encoded using a directory of a single space
+        // Format can't use an empty string for this, as that terminates the section
+        // Could use `/`, but that would be inconsistent with the other directory formats
+        if (directory == " ") {
+          directory = "";
         }
 
         files.at(extension).emplace(directory, CaseInsensitiveMap<File>());
@@ -156,15 +163,19 @@ namespace VpkParser {
       }
     }
 
+    if (!formatted.empty() && formatted.back() == '/') {
+      formatted.pop_back();
+    }
+
     return std::move(formatted);
   }
 
-  std::optional<std::string> Vpk::getSubdirectory(
-    const std::string& parentDirectory, const std::string& childDirectory
-  ) {
-    // Minus 1 for expected '/' between the matched child directory and next folder
-    // Minus another 1 for the expected folder name after the '/'
-    if (childDirectory.length() - 2 < parentDirectory.length() //
+  std::optional<std::string> Vpk::getSubdirectory(const std::string& parentDirectory, std::string childDirectory) {
+    childDirectory = "/" + childDirectory;
+
+    // Plus 1 for expected '/' between the matched child directory and next folder
+    // Plus another 1 for the expected folder name after the '/'
+    if (childDirectory.length() < parentDirectory.length() + 2 //
         || !childDirectory.starts_with(parentDirectory) //
         || childDirectory[parentDirectory.length()] != '/') {
       return std::nullopt;
