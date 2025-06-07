@@ -170,8 +170,16 @@ namespace VpkParser {
     return std::move(formatted);
   }
 
-  std::optional<std::string> Vpk::getSubdirectory(const std::string& parentDirectory, std::string childDirectory) {
-    childDirectory = "/" + childDirectory;
+  std::optional<std::string> Vpk::getSubdirectory(
+    const std::string& parentDirectory, const std::string& childDirectory
+  ) {
+    if (childDirectory.empty()) {
+      return std::nullopt;
+    }
+
+    if (parentDirectory.empty()) {
+      return childDirectory.substr(childDirectory.find_first_of('/'));
+    }
 
     // Plus 1 for expected '/' between the matched child directory and next folder
     // Plus another 1 for the expected folder name after the '/'
@@ -181,7 +189,7 @@ namespace VpkParser {
       return std::nullopt;
     }
 
-    const auto startIndex = parentDirectory.length() + 1;
+    const auto startIndex = parentDirectory.length() + 1; // Plus 1 to skip over slash
     const auto endIndex = childDirectory.find_first_of('/', startIndex);
 
     if (endIndex == std::string::npos) {

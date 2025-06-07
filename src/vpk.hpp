@@ -71,7 +71,7 @@ namespace VpkParser {
     [[nodiscard]] static std::string getVpkDirectory(const std::filesystem::path& path);
 
     [[nodiscard]] static std::optional<std::string> getSubdirectory(
-      const std::string& parentDirectory, std::string childDirectory
+      const std::string& parentDirectory, const std::string& childDirectory
     );
   };
 }
