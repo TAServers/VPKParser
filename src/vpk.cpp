@@ -3,6 +3,7 @@
 #include "helpers/offset-data-view.hpp"
 #include "structs/directory-entry.hpp"
 #include "structs/headers.hpp"
+#include <ranges>
 #include <set>
 
 namespace VpkParser {
@@ -38,10 +39,17 @@ namespace VpkParser {
       files.emplace(extension, CaseInsensitiveMap<CaseInsensitiveMap<File>>());
 
       while (true) {
-        const auto directory = dataView.parseString(offset, "Failed to parse directory");
+        auto directory = dataView.parseString(offset, "Failed to parse directory");
         offset += directory.length() + 1;
         if (directory.empty()) {
           break;
+        }
+
+        // ASSUMPTION: Top-level files are encoded using a directory of a single space
+        // Format can't use an empty string for this, as that terminates the section
+        // Could use `/`, but that would be inconsistent with the other directory formats
+        if (directory == " ") {
+          directory = "";
         }
 
         files.at(extension).emplace(directory, CaseInsensitiveMap<File>());
@@ -95,6 +103,33 @@ namespace VpkParser {
     return std::move(fileData);
   }
 
+  DirectoryContents Vpk::list(const std::filesystem::path& path) const {
+    const auto normalisedPath = getVpkDirectory(path);
+
+    std::set<std::filesystem::path> fileList = {};
+    std::set<std::filesystem::path> directoryList = {};
+
+    for (const auto& [extension, directories] : files) {
+      for (const auto& [directory, fileNames] : directories) {
+        auto subdirectory = getSubdirectory(normalisedPath, directory);
+
+        if (subdirectory.has_value()) {
+          directoryList.emplace(std::move(subdirectory.value()));
+        } else if (directory == normalisedPath) {
+          for (const auto& fileName : fileNames | std::views::keys) {
+            fileList.emplace(fileName + extension);
+          }
+        }
+      }
+    }
+
+    std::erase_if(directoryList, [](const auto& dir) { return dir == ""; });
+    return DirectoryContents{
+      .directories = std::move(directoryList),
+      .files = std::move(fileList),
+    };
+  }
+
   bool Vpk::fileExists(const std::filesystem::path& path) const {
     const auto components = splitPath(path);
 
@@ -110,19 +145,57 @@ namespace VpkParser {
   }
 
   Vpk::PathComponents Vpk::splitPath(const std::filesystem::path& path) {
-    auto directory = path.parent_path().generic_string();
-    if (directory.starts_with('/')) {
-      if (directory.length() > 1) {
-        directory.erase(0, 1);
+    return {
+      .extension = path.extension().generic_string(),
+      .directory = getVpkDirectory(path.parent_path()),
+      .filename = path.stem().generic_string(),
+    };
+  }
+
+  std::string Vpk::getVpkDirectory(const std::filesystem::path& path) {
+    auto formatted = path.generic_string();
+
+    if (formatted.starts_with('/')) {
+      if (formatted.length() > 1) {
+        formatted.erase(0, 1);
       } else {
-        directory = "";
+        formatted = "";
       }
     }
 
-    return {
-      .extension = path.extension().generic_string(),
-      .directory = directory,
-      .filename = path.stem().generic_string(),
-    };
+    if (!formatted.empty() && formatted.back() == '/') {
+      formatted.pop_back();
+    }
+
+    return std::move(formatted);
+  }
+
+  std::optional<std::string> Vpk::getSubdirectory(
+    const std::string& parentDirectory, const std::string& childDirectory
+  ) {
+    if (childDirectory.empty()) {
+      return std::nullopt;
+    }
+
+    if (parentDirectory.empty()) {
+      return childDirectory.substr(0, childDirectory.find_first_of('/'));
+    }
+
+    // Plus 1 for expected '/' between the matched child directory and next folder
+    // Plus another 1 for the expected folder name after the '/'
+    if (childDirectory.length() < parentDirectory.length() + 2 //
+        || !childDirectory.starts_with(parentDirectory) //
+        || childDirectory[parentDirectory.length()] != '/') {
+      return std::nullopt;
+    }
+
+    const auto startIndex = parentDirectory.length() + 1; // Plus 1 to skip over slash
+    const auto endIndex = childDirectory.find_first_of('/', startIndex);
+
+    if (endIndex == std::string::npos) {
+      return childDirectory.substr(startIndex);
+    }
+
+    return childDirectory.substr(startIndex, endIndex - startIndex);
   }
 }
