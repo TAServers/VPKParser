@@ -13,32 +13,6 @@ namespace VpkParser {
   namespace {
     constexpr uint32_t FILE_SIGNATURE = 0x55aa1234;
     const std::set<uint32_t> SUPPORTED_VERSIONS = {1, 2};
-
-    bool isPathRoot(const std::filesystem::path& path) {
-      return path == "" || path == "/" || path == "\\";
-    }
-
-    std::filesystem::path normalizePath(std::filesystem::path&& path) {
-      if (path.empty()) {
-        return path;
-      }
-
-      path = path.make_preferred().lexically_normal();
-      auto stringPath = path.generic_string();
-      if (stringPath.back() == '/') {
-        stringPath.pop_back();
-      }
-
-      return {stringPath};
-    }
-
-    bool isPathSubfolderOfBase(const std::filesystem::path& path, const std::filesystem::path& base) {
-      if (isPathRoot(base)) {
-        return path.parent_path() == "";
-      }
-
-      return normalizePath(path.parent_path()) == base;
-    }
   }
 
   Vpk::Vpk(const std::span<std::byte>& data) {
@@ -122,26 +96,24 @@ namespace VpkParser {
     return std::move(fileData);
   }
 
-  std::optional<DirectoryContents> Vpk::list(const std::filesystem::path& path) const {
+  DirectoryContents Vpk::list(const std::filesystem::path& path) const {
+    const auto normalisedPath = getVpkDirectory(path);
+
     std::vector<std::filesystem::path> fileList = {};
     std::vector<std::filesystem::path> directoryList = {};
 
     for (const auto& [extension, directories] : files) {
-      for (const auto& [dir, fileNames] : directories) {
-        auto dirPath = normalizePath(std::filesystem::path(dir));
+      for (const auto& [directory, fileNames] : directories) {
+        auto subdirectory = getSubdirectory(normalisedPath, directory);
 
-        if (isPathSubfolderOfBase(dirPath, path)) {
-          directoryList.push_back(dirPath.filename());
-        } else if (dirPath == path) {
+        if (subdirectory.has_value()) {
+          directoryList.push_back(std::move(subdirectory.value()));
+        } else if (directory == normalisedPath) {
           for (const auto& fileName : fileNames | std::views::keys) {
             fileList.emplace_back(fileName + extension);
           }
         }
       }
-    }
-
-    if (fileList.empty() && directoryList.empty()) {
-      return std::nullopt;
     }
 
     std::erase_if(directoryList, [](const auto& dir) { return dir == ""; });
@@ -166,19 +138,41 @@ namespace VpkParser {
   }
 
   Vpk::PathComponents Vpk::splitPath(const std::filesystem::path& path) {
-    auto directory = path.parent_path().generic_string();
-    if (directory.starts_with('/')) {
-      if (directory.length() > 1) {
-        directory.erase(0, 1);
+    return {
+      .extension = path.extension().generic_string(),
+      .directory = getVpkDirectory(path.parent_path()),
+      .filename = path.stem().generic_string(),
+    };
+  }
+
+  std::string Vpk::getVpkDirectory(const std::filesystem::path& path) {
+    auto formatted = path.generic_string();
+
+    if (formatted.starts_with('/')) {
+      if (formatted.length() > 1) {
+        formatted.erase(0, 1);
       } else {
-        directory = "";
+        formatted = "";
       }
     }
 
-    return {
-      .extension = path.extension().generic_string(),
-      .directory = directory,
-      .filename = path.stem().generic_string(),
-    };
+    return std::move(formatted);
+  }
+
+  std::optional<std::string> Vpk::getSubdirectory(
+    const std::string& parentDirectory, const std::string& childDirectory
+  ) {
+    if (!childDirectory.starts_with(parentDirectory)) {
+      return std::nullopt;
+    }
+
+    const auto startIndex = parentDirectory.length();
+    const auto endIndex = childDirectory.find_first_of('/', startIndex);
+
+    if (endIndex == std::string::npos) {
+      return childDirectory.substr(startIndex);
+    }
+
+    return childDirectory.substr(startIndex, endIndex - startIndex);
   }
 }

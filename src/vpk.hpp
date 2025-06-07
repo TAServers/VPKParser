@@ -35,9 +35,9 @@ namespace VpkParser {
     /**
      * Lists the subdirectories and files of the given directory.
      * @param path Path to list.
-     * @return Subdirectories and files, or std::nullopt if path does not exist.
+     * @return Subdirectories and files
      */
-    [[nodiscard]] std::optional<DirectoryContents> list(const std::filesystem::path& path) const;
+    [[nodiscard]] DirectoryContents list(const std::filesystem::path& path) const;
 
     [[nodiscard]] bool fileExists(const std::filesystem::path& path) const;
 
@@ -66,5 +66,11 @@ namespace VpkParser {
     [[nodiscard]] const File& getFileMetadata(const std::filesystem::path& path) const;
 
     [[nodiscard]] static PathComponents splitPath(const std::filesystem::path& path);
+
+    [[nodiscard]] static std::string getVpkDirectory(const std::filesystem::path& path);
+
+    [[nodiscard]] static std::optional<std::string> getSubdirectory(
+      const std::string& parentDirectory, const std::string& childDirectory
+    );
   };
 }
