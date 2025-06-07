@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
+#include <set>
 #include <span>
 
 namespace VpkParser {
@@ -11,12 +12,12 @@ namespace VpkParser {
     /**
      * Subdirectories of the listed directory.
      */
-    std::vector<std::filesystem::path> directories;
+    std::set<std::filesystem::path> directories;
 
     /**
      * Files in the listed directory.
      */
-    std::vector<std::filesystem::path> files;
+    std::set<std::filesystem::path> files;
   };
 
   class Vpk {

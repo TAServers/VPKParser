@@ -99,18 +99,18 @@ namespace VpkParser {
   DirectoryContents Vpk::list(const std::filesystem::path& path) const {
     const auto normalisedPath = getVpkDirectory(path);
 
-    std::vector<std::filesystem::path> fileList = {};
-    std::vector<std::filesystem::path> directoryList = {};
+    std::set<std::filesystem::path> fileList = {};
+    std::set<std::filesystem::path> directoryList = {};
 
     for (const auto& [extension, directories] : files) {
       for (const auto& [directory, fileNames] : directories) {
         auto subdirectory = getSubdirectory(normalisedPath, directory);
 
         if (subdirectory.has_value()) {
-          directoryList.push_back(std::move(subdirectory.value()));
+          directoryList.emplace(std::move(subdirectory.value()));
         } else if (directory == normalisedPath) {
           for (const auto& fileName : fileNames | std::views::keys) {
-            fileList.emplace_back(fileName + extension);
+            fileList.emplace(fileName + extension);
           }
         }
       }
