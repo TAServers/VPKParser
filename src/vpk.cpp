@@ -178,7 +178,7 @@ namespace VpkParser {
     }
 
     if (parentDirectory.empty()) {
-      return childDirectory.substr(childDirectory.find_first_of('/'));
+      return childDirectory.substr(0, childDirectory.find_first_of('/'));
     }
 
     // Plus 1 for expected '/' between the matched child directory and next folder
